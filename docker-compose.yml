@@ -1,0 +1,135 @@
+version: "3.9"
+
+services:
+  # ──────────────────────────────────────
+  # Database
+  # ──────────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: fieldbooker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./services/shared/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────
+  # Auth Service
+  # ──────────────────────────────────────
+  auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: fieldbooker-auth
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./services/auth/app:/app/app
+      - ./services/shared:/app/shared
+
+  # ──────────────────────────────────────
+  # Fields Service
+  # ──────────────────────────────────────
+  fields:
+    build:
+      context: .
+      dockerfile: services/fields/Dockerfile
+    container_name: fieldbooker-fields
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+    ports:
+      - "8002:8002"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./services/fields/app:/app/app
+      - ./services/shared:/app/shared
+
+  # ──────────────────────────────────────
+  # Submissions Service
+  # ──────────────────────────────────────
+  submissions:
+    build:
+      context: .
+      dockerfile: services/submissions/Dockerfile
+    container_name: fieldbooker-submissions
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      FIELDS_SERVICE_URL: ${FIELDS_SERVICE_URL}
+    ports:
+      - "8003:8003"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./services/submissions/app:/app/app
+      - ./services/shared:/app/shared
+
+  # ──────────────────────────────────────
+  # API Gateway (Nginx)
+  # ──────────────────────────────────────
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: fieldbooker-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - auth
+      - fields
+      - submissions
+      - frontend
+
+  # ──────────────────────────────────────
+  # Frontend
+  # ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: fieldbooker-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./services/frontend/src:/app/src
+      - ./services/frontend/public:/app/public
+
+volumes:
+  pgdata:
