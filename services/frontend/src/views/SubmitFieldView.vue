@@ -3,6 +3,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFieldsStore } from '@/stores/fields'
 import { useToast } from '@/composables/useToast'
+import { useAnalytics } from '@/composables/useAnalytics'
 import api from '@/services/api'
 import L from 'leaflet'
 
@@ -10,6 +11,7 @@ const router = useRouter()
 const route = useRoute()
 const fieldsStore = useFieldsStore()
 const toast = useToast()
+const { trackEvent } = useAnalytics()
 
 const fieldId = route.query.field_id
 const isUpdateMode = computed(() => !!fieldId)
@@ -197,6 +199,11 @@ const submitField = async () => {
       field_data: form.value,
       field_id: fieldId || null,
       submission_type: isUpdateMode.value ? 'update' : 'new'
+    })
+
+    trackEvent('field_submitted', null, {
+      submission_type: isUpdateMode.value ? 'update' : 'new',
+      city: form.value.city,
     })
 
     successMessage.value = isUpdateMode.value

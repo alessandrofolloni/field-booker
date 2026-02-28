@@ -21,3 +21,19 @@ BEGIN
     END IF;
 END
 $$;
+
+-- Performance indexes for analytics_events time-range aggregation queries
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_name = 'analytics_events'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_analytics_created_at
+            ON analytics_events(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_analytics_type_field
+            ON analytics_events(event_type, field_id)
+            WHERE field_id IS NOT NULL;
+    END IF;
+END
+$$;

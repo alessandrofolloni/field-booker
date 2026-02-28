@@ -50,28 +50,31 @@ const onMarkerClick = (field) => {
   fieldsStore.selectField(field)
 }
 
-const getMarkerIconHTML = (field) => {
+const getMarkerIconHTML = (field, selected = false) => {
   const primarySport = field.sports && field.sports.length > 0 ? field.sports[0] : null
-  const color = primarySport ? primarySport.color : 'var(--primary-color)'
+  const color = primarySport ? primarySport.color : '#6366f1'
   const icon = primarySport ? primarySport.icon : '📍'
-  
+
   return `
-    <div class="field-marker-container">
-      <div class="field-marker-pulse" style="background: ${color}"></div>
-      <div class="field-marker-main" style="background: ${color}">
-        ${icon}
+    <div class="field-marker-container${selected ? ' selected' : ''}">
+      ${selected ? `<div class="field-marker-glow" style="background:${color}"></div>` : ''}
+      <div class="field-marker-pulse" style="background:${color}"></div>
+      <div class="field-marker-main" style="background:${color};${selected ? `box-shadow:0 0 0 3px white,0 0 18px ${color};` : ''}">
+        <span class="field-marker-icon">${icon}</span>
       </div>
     </div>
   `
 }
 
-const createIcon = (field) => {
+// Reactive icon creation — reads selectedField to trigger re-render on selection change
+const getFieldIcon = (field) => {
+  const selected = fieldsStore.selectedField?.id === field.id
   return L.divIcon({
-    html: getMarkerIconHTML(field),
+    html: getMarkerIconHTML(field, selected),
     className: 'custom-field-icon',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20]
+    iconSize: [40, 48],
+    iconAnchor: [20, 44],
+    popupAnchor: [0, -44]
   })
 }
 
@@ -128,11 +131,11 @@ const userIcon = L.divIcon({
       </l-marker>
 
       <!-- Fields Markers -->
-      <l-marker 
-        v-for="field in fieldsStore.fields" 
-        :key="field.id" 
+      <l-marker
+        v-for="field in fieldsStore.fields"
+        :key="field.id"
         :lat-lng="[field.latitude, field.longitude]"
-        :icon="createIcon(field)"
+        :icon="getFieldIcon(field)"
         @click="onMarkerClick(field)"
       >
         <l-popup>
@@ -211,41 +214,62 @@ const userIcon = L.divIcon({
   align-items: center;
   justify-content: center;
   width: 40px;
-  height: 40px;
+  height: 48px;
 }
 
 .field-marker-main {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid white;
-  box-shadow: var(--shadow-lg);
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   z-index: 2;
-  font-size: 16px;
-  color: white;
+  position: relative;
+  transition: box-shadow 0.2s;
 }
 
-.field-marker-main > * {
+.field-marker-icon {
   transform: rotate(45deg);
+  font-size: 15px;
+  display: block;
+  line-height: 1;
 }
 
 .field-marker-pulse {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   z-index: 1;
-  opacity: 0.5;
-  animation: marker-pulse 2s infinite;
+  opacity: 0.45;
+  animation: marker-pulse 2.2s infinite;
 }
 
 @keyframes marker-pulse {
-  0% { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(2.5); opacity: 0; }
+  0%   { transform: scale(1);   opacity: 0.45; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* Selected marker glow */
+.field-marker-container.selected .field-marker-glow {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  top: -8px;
+  left: -5px;
+  filter: blur(8px);
+  animation: marker-glow 1.6s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes marker-glow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.3); }
 }
 
 /* Modern Popup Styles */

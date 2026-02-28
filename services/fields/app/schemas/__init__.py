@@ -172,3 +172,37 @@ class ReviewResponse(BaseModel):
     comment: Optional[str]
     created_at: datetime
     user_name: Optional[str] = None
+
+
+# ──────────────────────────────────────
+# Analytics Schemas
+# ──────────────────────────────────────
+
+class AnalyticsEventCreate(BaseModel):
+    """Schema for logging an analytics event."""
+    event_type: str = Field(..., min_length=1, max_length=50)
+    field_id: Optional[UUID] = None
+    session_id: Optional[str] = Field(None, max_length=128)
+    metadata: Optional[dict] = None
+
+
+class FieldAnalyticsStat(BaseModel):
+    """Analytics stats for a single field."""
+    field_id: UUID
+    field_name: str
+    view_count: int
+    booking_clicks: int
+    conversion_rate: float  # booking_clicks / view_count * 100
+
+
+class AnalyticsStats(BaseModel):
+    """Aggregated analytics response."""
+    period_days: int
+    total_field_views: int
+    total_booking_clicks: int
+    total_ai_messages: int
+    total_searches: int
+    total_filter_applied: int
+    total_field_submitted: int
+    top_fields: list[FieldAnalyticsStat]
+    events_by_day: list[dict]  # [{date, event_type, count}]

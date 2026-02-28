@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from shared.database import init_db
 from app.routers import fields_router, sports_router, reviews_router
+from app.routers import analytics_router
 
 
 @asynccontextmanager
@@ -41,8 +42,8 @@ async def health_check():
     return {"status": "healthy", "service": "fields"}
 
 
-# Register routers
-# Specific routers FIRST to avoid shadowing by /{field_id}
+# Register routers — specific prefixes FIRST to avoid shadowing by /{field_id}
 app.include_router(sports_router.router, prefix="/sports", tags=["Sports"])
 app.include_router(reviews_router.router, prefix="/reviews", tags=["Reviews"])
-app.include_router(fields_router.router, tags=["Fields"])
+app.include_router(analytics_router.router, prefix="/analytics", tags=["Analytics"])
+app.include_router(fields_router.router, tags=["Fields"])  # Last — has wildcard /{field_id}
