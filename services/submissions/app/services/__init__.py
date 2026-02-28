@@ -4,6 +4,7 @@ Handles submission creation, listing, and admin approval/rejection
 with inter-service communication to the Fields service.
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
@@ -14,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Submission, SubmissionStatus
 from shared.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class SubmissionsService:
@@ -174,27 +177,60 @@ class SubmissionsService:
     ) -> None:
         """Create a new field in the Fields service."""
         fields_url = f"{self._settings.FIELDS_SERVICE_URL}/fields/"
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                fields_url,
-                json=field_data,
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=10.0,
-            )
-            if response.status_code not in (200, 201):
-                raise RuntimeError(f"Failed to create field: {response.status_code} - {response.text}")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    fields_url,
+                    json=field_data,
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10.0,
+                )
+                if response.status_code not in (200, 201):
+                    if response.status_code == 422:
+                        # Validation error from Fields service
+                        detail = response.json().get("detail", response.text)
+                        logger.error("Field validation error from Fields service: %s", detail)
+                        raise RuntimeError(f"Dati del campo non validi: {detail}")
+                    elif response.status_code == 400:
+                        logger.error("Bad request to Fields service: %s", response.text)
+                        raise RuntimeError(f"Richiesta non valida al servizio campi: {response.text[:200]}")
+                    else:
+                        logger.error("Fields service error %s: %s", response.status_code, response.text[:200])
+                        raise RuntimeError(f"Errore del servizio campi ({response.status_code}). Riprova più tardi.")
+        except httpx.TimeoutException:
+            logger.error("Timeout calling Fields service to create field")
+            raise RuntimeError("Timeout durante la comunicazione con il servizio campi.")
+        except httpx.RequestError as e:
+            logger.error("Network error calling Fields service: %s", e)
+            raise RuntimeError("Errore di rete durante la comunicazione con il servizio campi.")
 
     async def _update_field_from_submission(
         self, field_id: UUID, field_data: dict, token: str
     ) -> None:
         """Update an existing field in the Fields service."""
         fields_url = f"{self._settings.FIELDS_SERVICE_URL}/fields/{field_id}"
-        async with httpx.AsyncClient() as client:
-            response = await client.put(
-                fields_url,
-                json=field_data,
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=10.0,
-            )
-            if response.status_code not in (200, 201, 204):
-                raise RuntimeError(f"Failed to update field: {response.status_code} - {response.text}")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.put(
+                    fields_url,
+                    json=field_data,
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10.0,
+                )
+                if response.status_code not in (200, 201, 204):
+                    if response.status_code == 404:
+                        logger.error("Field %s not found in Fields service", field_id)
+                        raise RuntimeError(f"Campo {field_id} non trovato nel servizio.")
+                    elif response.status_code == 422:
+                        detail = response.json().get("detail", response.text)
+                        logger.error("Validation error updating field: %s", detail)
+                        raise RuntimeError(f"Dati di aggiornamento non validi: {detail}")
+                    else:
+                        logger.error("Fields service error %s updating field: %s", response.status_code, response.text[:200])
+                        raise RuntimeError(f"Errore del servizio campi ({response.status_code}). Riprova più tardi.")
+        except httpx.TimeoutException:
+            logger.error("Timeout calling Fields service to update field %s", field_id)
+            raise RuntimeError("Timeout durante la comunicazione con il servizio campi.")
+        except httpx.RequestError as e:
+            logger.error("Network error calling Fields service: %s", e)
+            raise RuntimeError("Errore di rete durante la comunicazione con il servizio campi.")

@@ -172,3 +172,47 @@ class TestUserModel:
 
         assert "test@example.com" in repr(user)
         assert "user" in repr(user)
+
+
+# ──────────────────────────────────────
+# JWT Edge Case Tests
+# ──────────────────────────────────────
+
+class TestJWTEdgeCases:
+    """Edge case tests for JWT tokens."""
+
+    def test_expired_token_raises_401(self):
+        """Should raise HTTPException(401) for expired token."""
+        from fastapi import HTTPException
+        from jose import jwt
+        from shared.config import get_settings
+
+        settings = get_settings()
+        expired_payload = {"sub": "user_id", "exp": 0}  # epoch 0 = always expired
+        token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(token)
+        assert exc_info.value.status_code == 401
+
+    def test_tampered_token_raises_401(self):
+        """Should raise HTTPException(401) for tampered token signature."""
+        from fastapi import HTTPException
+
+        data = {"sub": "user_id", "email": "test@example.com"}
+        token = create_access_token(data)
+        tampered = token[:-5] + "XXXXX"
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(tampered)
+        assert exc_info.value.status_code == 401
+
+    def test_token_payload_round_trip(self):
+        """Token payload should survive encode/decode cycle."""
+        data = {"sub": "user_id_123", "email": "user@test.com", "role": "admin", "name": "Test"}
+        token = create_access_token(data)
+        payload = decode_access_token(token)
+
+        assert payload["sub"] == "user_id_123"
+        assert payload["email"] == "user@test.com"
+        assert payload["role"] == "admin"
