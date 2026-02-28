@@ -145,3 +145,30 @@ class Review(Base):
 
     def __repr__(self) -> str:
         return f"<Review field={self.field_id} rating={self.rating}>"
+
+
+class AnalyticsEvent(Base):
+    """Tracks user interaction events for analytics (field views, booking clicks, etc.)."""
+
+    __tablename__ = "analytics_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_type = Column(String(50), nullable=False, index=True)
+    field_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fields.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    user_id = Column(UUID(as_uuid=True), nullable=True)
+    session_id = Column(String(128), nullable=True)
+    metadata = Column(JSONB, nullable=True, default=dict)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    def __repr__(self) -> str:
+        return f"<AnalyticsEvent {self.event_type} field={self.field_id}>"
