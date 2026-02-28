@@ -162,7 +162,9 @@ class AnalyticsEvent(Base):
     )
     user_id = Column(UUID(as_uuid=True), nullable=True)
     session_id = Column(String(128), nullable=True)
-    metadata = Column(JSONB, nullable=True, default=dict)
+    # Note: 'metadata' is reserved by SQLAlchemy's DeclarativeBase — use 'event_metadata'
+    # The DB column is still named 'metadata' via the `name` kwarg for backwards compatibility
+    event_metadata = Column("metadata", JSONB, nullable=True, default=dict)
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

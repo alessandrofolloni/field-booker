@@ -33,7 +33,7 @@ class AnalyticsService:
             field_id=field_id,
             user_id=user_id,
             session_id=session_id,
-            metadata=metadata or {},
+            event_metadata=metadata or {},
         )
         self._db.add(event)
         await self._db.flush()
