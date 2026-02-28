@@ -72,3 +72,19 @@ async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
             detail="Admin access required",
         )
     return current_user
+
+
+# Optional auth — returns user dict if token valid, None for anonymous requests
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+) -> Optional[dict]:
+    """FastAPI dependency that returns the current user if authenticated, else None."""
+    if not credentials:
+        return None
+    try:
+        return decode_access_token(credentials.credentials)
+    except Exception:
+        return None

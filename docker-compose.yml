@@ -97,6 +97,26 @@ services:
       - ./services/shared:/app/shared
 
   # ──────────────────────────────────────
+  # AI Assistant Service
+  # ──────────────────────────────────────
+  ai:
+    build:
+      context: .
+      dockerfile: services/ai_assistant/Dockerfile
+    container_name: fieldbooker-ai
+    restart: unless-stopped
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      FIELDS_SERVICE_URL: ${FIELDS_SERVICE_URL}
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./services/ai_assistant/app:/app/app
+      - ./services/shared:/app/shared
+
+  # ──────────────────────────────────────
   # API Gateway (Nginx)
   # ──────────────────────────────────────
   gateway:
@@ -111,6 +131,7 @@ services:
       - auth
       - fields
       - submissions
+      - ai
       - frontend
 
   # ──────────────────────────────────────

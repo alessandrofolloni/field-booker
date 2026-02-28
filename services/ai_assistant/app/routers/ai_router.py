@@ -2,11 +2,14 @@
 AI Assistant API Routes.
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Body
 from typing import List, Optional
 from app.services.agent_service import AIAgentService
 from shared.config import get_settings
 from shared.security import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()

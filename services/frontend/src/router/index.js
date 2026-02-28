@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -12,7 +13,7 @@ const router = createRouter({
         },
         {
             path: '/submit',
-            name: 'submit',
+            name: 'submit-field',
             component: () => import('../views/SubmitFieldView.vue'),
             meta: { requiresAuth: true }
         },
@@ -21,6 +22,12 @@ const router = createRouter({
             name: 'admin',
             component: () => import('../views/AdminDashboardView.vue'),
             meta: { requiresAuth: true, requiresAdmin: true }
+        },
+        {
+            path: '/analytics',
+            name: 'analytics',
+            component: () => import('../views/AnalyticsDashboardView.vue'),
+            meta: { requiresAuth: true, requiresAdmin: true }
         }
     ]
 })
@@ -28,17 +35,16 @@ const router = createRouter({
 // Navigation Guards
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore()
+    const toast = useToast()
 
-    // If route requires authentication
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        alert("Devi effettuare l'accesso per visualizzare questa pagina.")
+        toast.warning("Devi effettuare l'accesso per visualizzare questa pagina.")
         next('/')
         return
     }
 
-    // If route requires admin
     if (to.meta.requiresAdmin && !authStore.isAdmin) {
-        alert("Accesso negato. Questa pagina è riservata agli amministratori.")
+        toast.error("Accesso negato. Questa pagina è riservata agli amministratori.")
         next('/')
         return
     }
