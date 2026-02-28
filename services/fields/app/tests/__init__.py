@@ -206,3 +206,103 @@ class TestSchemaValidation:
                 city="Test",
                 sport_ids=[uuid4()],
             )
+
+    def test_field_create_invalid_longitude(self):
+        """Should reject longitude > 180."""
+        with pytest.raises(Exception):
+            FieldCreate(
+                name="Test",
+                latitude=41.0,
+                longitude=181.0,  # Invalid: > 180
+                address="Test",
+                city="Test",
+                sport_ids=[uuid4()],
+            )
+
+    def test_field_create_no_sports(self):
+        """Should reject field with empty sport_ids list."""
+        with pytest.raises(Exception):
+            FieldCreate(
+                name="Test Field",
+                latitude=41.0,
+                longitude=12.0,
+                address="Test",
+                city="Test",
+                sport_ids=[],
+            )
+
+
+# ──────────────────────────────────────
+# Additional Sports Tests
+# ──────────────────────────────────────
+
+class TestSportsServiceExtended:
+    """Additional coverage for SportsService."""
+
+    @pytest.fixture
+    def mock_db(self):
+        db = AsyncMock()
+        db.flush = AsyncMock()
+        db.add = MagicMock()
+        return db
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return SportsService(mock_db)
+
+    @pytest.mark.asyncio
+    async def test_get_all_sports_empty(self, service, mock_db):
+        """Should return empty list when no sports exist."""
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        sports = await service.get_all()
+        assert sports == []
+
+    @pytest.mark.asyncio
+    async def test_create_sport_with_defaults(self, service, mock_db):
+        """Should use default icon and color if not provided."""
+        await service.create(name="Volleyball")
+        mock_db.add.assert_called_once()
+
+
+# ──────────────────────────────────────
+# Additional Reviews Tests
+# ──────────────────────────────────────
+
+class TestReviewsServiceExtended:
+    """Additional coverage for ReviewsService."""
+
+    @pytest.fixture
+    def mock_db(self):
+        db = AsyncMock()
+        db.flush = AsyncMock()
+        db.add = MagicMock()
+        return db
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return ReviewsService(mock_db)
+
+    @pytest.mark.asyncio
+    async def test_get_reviews_for_field_empty(self, service, mock_db):
+        """Should return empty list when field has no reviews."""
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        reviews = await service.get_for_field(uuid4())
+        assert reviews == []
+
+    def test_review_rating_zero_invalid(self):
+        """Rating 0 should not be accepted."""
+        from app.schemas import ReviewCreate
+        with pytest.raises(Exception):
+            ReviewCreate(field_id=uuid4(), rating=0)
+
+    def test_review_rating_six_invalid(self):
+        """Rating 6 should not be accepted."""
+        from app.schemas import ReviewCreate
+        with pytest.raises(Exception):
+            ReviewCreate(field_id=uuid4(), rating=6)

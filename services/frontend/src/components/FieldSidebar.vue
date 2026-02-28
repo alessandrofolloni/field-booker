@@ -716,6 +716,51 @@ h3 {
   color: var(--accent-color);
 }
 
+/* Info Grid (Field Details) */
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info-text label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.info-text p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.field-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.fix-section { margin-top: 0.75rem; }
+
 /* Transitions */
 .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
 .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateX(-20px); }

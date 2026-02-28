@@ -48,11 +48,19 @@ class AIAgentService:
         """
         Search for sports fields near specific coordinates.
         Args:
-            latitude: The latitude of the location.
-            longitude: The longitude of the location.
+            latitude: The latitude of the location (-90 to 90).
+            longitude: The longitude of the location (-180 to 180).
             radius_km: The search radius in kilometers. Defaults to 10.0.
             sport_ids: Optional list of sport IDs to filter by.
         """
+        # Validate coordinates
+        if not (-90 <= latitude <= 90):
+            return {"error": f"Invalid latitude {latitude}: must be between -90 and 90"}
+        if not (-180 <= longitude <= 180):
+            return {"error": f"Invalid longitude {longitude}: must be between -180 and 180"}
+        if not (0 < radius_km <= 500):
+            radius_km = min(max(radius_km, 1), 500)
+
         url = f"{self.settings.FIELDS_SERVICE_URL}/nearby"
         params = {
             "latitude": latitude,
@@ -60,15 +68,18 @@ class AIAgentService:
             "radius_km": radius_km
         }
         if sport_ids:
-            params["sport_ids"] = ",".join(sport_ids)
-            
+            params["sport_ids"] = ",".join(str(sid) for sid in sport_ids)
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url, params=params, timeout=10.0)
                 if response.status_code == 200:
                     return response.json()
-                return {"error": f"Fields service returned {response.status_code}"}
+                return {"error": f"Fields service returned {response.status_code}: {response.text[:200]}"}
+            except httpx.TimeoutException:
+                return {"error": "Fields service timed out. Please try again."}
             except Exception as e:
+                logger.exception("search_nearby_fields error")
                 return {"error": str(e)}
 
     async def geocode_address(self, address: str) -> Any:
@@ -76,22 +87,29 @@ class AIAgentService:
         Convert a city name or address into geographical coordinates (latitude and longitude).
         Use this when a user provides a name of a place instead of coordinates.
         """
+        if not address or not address.strip():
+            return {"error": "Address cannot be empty"}
+
         async with httpx.AsyncClient() as client:
             try:
-                url = f"https://nominatim.openstreetmap.org/search"
-                params = {"q": address, "format": "json", "limit": 1}
-                # Nominatim requires a User-Agent
-                headers = {"User-Agent": "FieldBooker/1.0"}
+                url = "https://nominatim.openstreetmap.org/search"
+                params = {"q": address.strip(), "format": "json", "limit": 1}
+                headers = {"User-Agent": "FieldBooker/1.0 (field-booker-assistant)"}
                 response = await client.get(url, params=params, headers=headers, timeout=10.0)
-                if response.status_code == 200 and response.json():
-                    data = response.json()[0]
-                    return {
-                        "latitude": float(data["lat"]),
-                        "longitude": float(data["lon"]),
-                        "display_name": data["display_name"]
-                    }
-                return {"error": "Address not found"}
+                if response.status_code == 200:
+                    results = response.json()
+                    if results:
+                        data = results[0]
+                        return {
+                            "latitude": float(data["lat"]),
+                            "longitude": float(data["lon"]),
+                            "display_name": data["display_name"]
+                        }
+                return {"error": f"Address not found: '{address}'. Try a city name or full address."}
+            except httpx.TimeoutException:
+                return {"error": "Geocoding service timed out. Try again."}
             except Exception as e:
+                logger.exception("geocode_address error")
                 return {"error": str(e)}
 
     async def get_available_sports(self) -> Any:
@@ -112,29 +130,48 @@ class AIAgentService:
     async def chat(self, user_message: str, history: List[dict] = None, session_id: str = "default"):
         """
         Process a user message and return the agent response.
-        History is managed by the runner's session if session_id is consistent.
+        Session history is managed by the InMemoryRunner keyed on session_id.
         """
+        if not user_message or not user_message.strip():
+            return {"response": "Please enter a message.", "session_id": session_id}
+
         new_content = types.Content(
             role='user',
-            parts=[types.Part(text=user_message)]
+            parts=[types.Part(text=user_message.strip())]
         )
 
         response_text = ""
-        
-        # ADK run_async returns an AsyncGenerator of events
-        async for event in self.runner.run_async(
-            user_id="user_1", # Simplified for now
-            session_id=session_id,
-            new_message=new_content
-        ):
-            # We are interested in the final response parts
-            if event.type == 'model_response' and event.content:
-                for part in event.content.parts:
-                    if part.text:
-                        response_text += part.text
-        
-        # Fetch updated history from the session service if needed by the frontend
-        # For now, we'll return a simple response
+
+        try:
+            # ADK run_async returns an AsyncGenerator of events
+            async for event in self.runner.run_async(
+                user_id="user_1",
+                session_id=session_id,
+                new_message=new_content
+            ):
+                # Use is_final_response() to get the agent's final text output
+                if hasattr(event, 'is_final_response') and event.is_final_response():
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                response_text += part.text
+                # Fallback: also collect from any content event with text
+                elif hasattr(event, 'content') and event.content:
+                    if hasattr(event.content, 'parts') and event.content.parts:
+                        for part in event.content.parts:
+                            if hasattr(part, 'text') and part.text and not response_text:
+                                response_text += part.text
+        except Exception as e:
+            logger.exception("Error during ADK runner execution")
+            return {
+                "response": "Si è verificato un errore durante l'elaborazione. Riprova.",
+                "session_id": session_id,
+                "error": str(e)
+            }
+
+        if not response_text:
+            response_text = "Non ho trovato risultati per la tua richiesta. Puoi fornire più dettagli sulla posizione o lo sport che cerchi?"
+
         return {
             "response": response_text,
             "session_id": session_id

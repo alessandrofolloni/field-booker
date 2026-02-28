@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const authStore = useAuthStore()
 
@@ -39,7 +40,7 @@ onMounted(() => {
                 Dashboard
               </router-link>
               
-              <router-link to="/submit" class="btn-primary">
+              <router-link :to="{ name: 'submit-field' }" class="btn-primary">
                 <span>Segnala Campo</span>
               </router-link>
               
@@ -68,6 +69,8 @@ onMounted(() => {
         </transition>
       </router-view>
     </main>
+
+    <ToastContainer />
   </div>
 </template>
 
