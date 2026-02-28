@@ -97,7 +97,7 @@ export const useFieldsStore = defineStore('fields', () => {
                 }
                 fetchNearbyFields()
             } else {
-                alert("Indirizzo non trovato. Riprova con più dettagli (es. città).")
+                console.warn("Indirizzo non trovato:", searchAddress.value)
             }
         } catch (error) {
             console.error("Geocoding error:", error)
@@ -107,25 +107,31 @@ export const useFieldsStore = defineStore('fields', () => {
     }
 
     const getUserLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    }
-                    userLocation.value = loc
-                    realUserLocation.value = loc
-                    fetchNearbyFields()
-                },
-                (error) => {
-                    console.error("Error getting location: ", error)
-                    fetchNearbyFields()
-                }
-            )
-        } else {
+        if (!navigator.geolocation) {
             fetchNearbyFields()
+            return
         }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const loc = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                }
+                userLocation.value = loc
+                realUserLocation.value = loc
+                fetchNearbyFields()
+            },
+            (error) => {
+                console.warn("Geolocation error:", error.code, error.message)
+                // Fall back to default location and still load fields
+                fetchNearbyFields()
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,       // 8s before giving up
+                maximumAge: 60000    // Accept a cached position up to 1 minute old
+            }
+        )
     }
 
     const selectField = (field) => {

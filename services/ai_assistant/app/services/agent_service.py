@@ -14,14 +14,35 @@ from shared.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+
+def _resolve_fields_url(configured_url: str) -> str:
+    """
+    When running locally (run_local.sh), services use Docker hostnames like
+    'http://fields:8002' which are unreachable from the host machine.
+    Detect this and fall back to localhost keeping the same port.
+    """
+    docker_hostnames = ("http://fields:", "http://auth:", "http://submissions:", "http://ai:")
+    if any(configured_url.startswith(h) for h in docker_hostnames):
+        port = configured_url.split(":")[-1].rstrip("/")
+        return f"http://localhost:{port}"
+    return configured_url
+
+
 class AIAgentService:
     def __init__(self):
         self.settings = get_settings()
-        
+
         # Ensure the API key is in the environment for the underlying genai client
         if self.settings.GOOGLE_API_KEY:
             os.environ['GOOGLE_API_KEY'] = self.settings.GOOGLE_API_KEY
-        
+
+        # Resolve correct URL: Docker hostname → localhost when running locally
+        self.fields_url = _resolve_fields_url(self.settings.FIELDS_SERVICE_URL)
+        logger.info(f"AI service → Fields URL resolved to: {self.fields_url}")
+
+        # Track created ADK sessions to avoid duplicate creation errors
+        self._sessions: set = set()
+
         # Define the agent with tools
         self.agent = Agent(
             model='gemini-1.5-flash',
@@ -44,6 +65,21 @@ class AIAgentService:
         # Use InMemoryRunner for development (manages sessions in memory)
         self.runner = InMemoryRunner(agent=self.agent)
 
+    async def _ensure_session(self, session_id: str) -> None:
+        """Create the ADK session if it doesn't already exist."""
+        if session_id not in self._sessions:
+            try:
+                await self.runner.session_service.create_session(
+                    app_name=self.agent.name,
+                    user_id="user_1",
+                    session_id=session_id,
+                )
+            except Exception as e:
+                # Session may already exist — that's fine
+                logger.debug(f"Session note ({session_id}): {e}")
+            finally:
+                self._sessions.add(session_id)
+
     async def search_nearby_fields(self, latitude: float, longitude: float, radius_km: float = 10.0, sport_ids: Optional[List[str]] = None) -> Any:
         """
         Search for sports fields near specific coordinates.
@@ -61,7 +97,7 @@ class AIAgentService:
         if not (0 < radius_km <= 500):
             radius_km = min(max(radius_km, 1), 500)
 
-        url = f"{self.settings.FIELDS_SERVICE_URL}/nearby"
+        url = f"{self.fields_url}/nearby"
         params = {
             "latitude": latitude,
             "longitude": longitude,
@@ -117,7 +153,7 @@ class AIAgentService:
         Retrieve the list of available sports and their unique IDs.
         Essential for translating common names like 'padel' into the system's sport IDs.
         """
-        url = f"{self.settings.FIELDS_SERVICE_URL}/sports/"
+        url = f"{self.fields_url}/sports/"
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url, timeout=10.0)
@@ -134,6 +170,9 @@ class AIAgentService:
         """
         if not user_message or not user_message.strip():
             return {"response": "Please enter a message.", "session_id": session_id}
+
+        # Ensure the ADK session exists before running
+        await self._ensure_session(session_id)
 
         new_content = types.Content(
             role='user',
