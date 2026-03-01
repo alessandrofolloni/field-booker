@@ -38,8 +38,10 @@ onMounted(() => {
 <style scoped>
 .home-layout {
   display: flex;
-  height: calc(100vh - var(--nav-height)); 
-  width: 100vw;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
   background-color: var(--background-color);
 }
 

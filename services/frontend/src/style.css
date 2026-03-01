@@ -372,3 +372,79 @@ button:active {
   z-index: 0;
   pointer-events: none;
 }
+
+/* ══════════════════════════════════════════
+   LIGHT MODE THEME
+   Activated by: <html data-theme="light">
+   ══════════════════════════════════════════ */
+[data-theme="light"] {
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --secondary-color: #10b981;
+  --accent-color: #d97706;
+
+  --background-color: #f1f5f9;
+  --surface-color: rgba(255, 255, 255, 0.92);
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.09);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --color-surface-1: rgba(241, 245, 249, 0.98);
+  --color-surface-2: rgba(255, 255, 255, 0.95);
+  --color-surface-3: rgba(226, 232, 240, 0.85);
+
+  --color-border: rgba(0, 0, 0, 0.09);
+  --color-border-hover: rgba(0, 0, 0, 0.18);
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+
+  --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(241,245,249,0.98) 100%);
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.07);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.09), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.09), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.18);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow-primary: 0 4px 20px rgba(99, 102, 241, 0.25);
+  --shadow-accent: 0 4px 20px rgba(34, 197, 94, 0.2);
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.07) 0, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0, transparent 50%);
+}
+
+/* Leaflet overrides for light mode */
+[data-theme="light"] .leaflet-container {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Scrollbar for light mode */
+[data-theme="light"] * {
+  scrollbar-color: rgba(99, 102, 241, 0.4) transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}

@@ -2,9 +2,17 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { LMap, LTileLayer, LMarker, LPopup, LCircle } from '@vue-leaflet/vue-leaflet'
 import { useFieldsStore } from '@/stores/fields'
+import { useTheme } from '@/composables/useTheme'
 import L from 'leaflet'
 
 const fieldsStore = useFieldsStore()
+const { theme } = useTheme()
+
+const tileUrl = computed(() =>
+  theme.value === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+)
 const zoom = ref(13)
 const mapRef = ref(null)
 
@@ -102,9 +110,9 @@ const userIcon = L.divIcon({
       class="full-height-map"
     >
       <l-tile-layer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        :url="tileUrl"
         layer-type="base"
-        name="CartoDB Dark"
+        name="CartoDB"
         attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
       ></l-tile-layer>
 

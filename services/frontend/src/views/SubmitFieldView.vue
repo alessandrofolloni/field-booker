@@ -4,8 +4,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { useFieldsStore } from '@/stores/fields'
 import { useToast } from '@/composables/useToast'
 import { useAnalytics } from '@/composables/useAnalytics'
+import { useTheme } from '@/composables/useTheme'
 import api from '@/services/api'
 import L from 'leaflet'
+
+const { theme } = useTheme()
 
 const router = useRouter()
 const route = useRoute()
@@ -63,7 +66,10 @@ const initMap = async (lat, lng) => {
   if (!mapInstance) {
     mapInstance = L.map(mapContainer.value, { center, zoom: 15, zoomControl: true })
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    const tileUrl = theme.value === 'dark'
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    L.tileLayer(tileUrl, {
       attribution: '© OpenStreetMap contributors © CARTO',
       maxZoom: 19,
     }).addTo(mapInstance)

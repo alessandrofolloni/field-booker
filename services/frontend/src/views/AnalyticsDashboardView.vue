@@ -185,7 +185,7 @@ onMounted(fetchStats)
   height: 100%;
   overflow-y: auto;
   padding: 3rem 2rem;
-  background: var(--bg-color, #0f172a);
+  background: var(--background-color);
 }
 
 .analytics-container {

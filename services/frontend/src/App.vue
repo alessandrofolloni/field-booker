@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useTheme } from '@/composables/useTheme'
 import ToastContainer from '@/components/ToastContainer.vue'
 
 const authStore = useAuthStore()
+const { theme, toggleTheme } = useTheme()
 
 onMounted(() => {
   authStore.checkAuth()
@@ -64,6 +66,12 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
             </button>
           </GoogleLogin>
         </template>
+
+        <!-- Theme toggle -->
+        <button class="btn-theme" @click="toggleTheme" :title="theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'">
+          <span v-if="theme === 'dark'">☀️</span>
+          <span v-else>🌙</span>
+        </button>
       </nav>
     </header>
 
@@ -124,10 +132,7 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #fff 0%, var(--primary-color, #6366f1) 120%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .sub {
@@ -142,6 +147,7 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
 .nav-links {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
 
 .user-profile {
@@ -252,6 +258,24 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
   box-shadow: var(--shadow-lg);
 }
 
+/* ─── Theme toggle ─── */
+.btn-theme {
+  font-size: 1.1rem;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-theme:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary-color);
+  transform: rotate(15deg) scale(1.1);
+}
+
 /* ─── Loading shimmer ─── */
 .loading-auth {
   width: 180px;
@@ -275,8 +299,9 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
 /* ─── Main content ─── */
 .main-content {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
+  /* HomeView manages its own scroll internally */
 }
 
 /* ─── Page transitions ─── */

@@ -48,10 +48,15 @@ const sendMessage = async () => {
     fieldsStore.fetchNearbyFields()
   } catch (error) {
     console.error('AI Error:', error)
-    messages.value.push({
-      role: 'model',
-      parts: [{ text: 'Scusa, ho avuto un problema tecnico. Controlla che la chiave API Gemini sia configurata.' }],
-    })
+    const status = error?.response?.status
+    const detail = error?.response?.data?.detail || ''
+    let errText = 'Scusa, si è verificato un problema tecnico. Riprova tra qualche istante.'
+    if (status === 503 || detail.includes('GOOGLE_API_KEY')) {
+      errText = '⚠️ Il servizio AI non è disponibile: chiave API non configurata sul server.'
+    } else if (status === 401 || status === 403) {
+      errText = 'Accesso negato. Prova ad effettuare il login per usare l\'assistente AI.'
+    }
+    messages.value.push({ role: 'model', parts: [{ text: errText }] })
   } finally {
     isLoading.value = false
     scrollToBottom()

@@ -1,6 +1,8 @@
 # Environment
 .env
+!.env.example
 *.env.local
+services/frontend/.env
 venv/
 .venv/
 env/
@@ -21,7 +23,6 @@ htmlcov/
 
 # Node
 node_modules/
-dist/
 .vite/
 
 # IDE
@@ -35,8 +36,11 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Docker
+# Logs
 *.log
 
 # Database
 pgdata/
+
+# Claude
+.claude/worktrees/
