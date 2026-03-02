@@ -133,7 +133,7 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(15, 23, 42, 0.25);
+  background: var(--glass-bg);
 }
 
 .chat-container {

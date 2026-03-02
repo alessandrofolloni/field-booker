@@ -7,6 +7,7 @@ import AIChatAssistant from './AIChatAssistant.vue'
 const fieldsStore = useFieldsStore()
 const { trackEvent } = useAnalytics()
 const suggestionTimeout = ref(null)
+const skipNextSuggestion = ref(false)
 const activeTab = ref('list') // 'list' or 'ai'
 
 const applyFilters = () => {
@@ -33,6 +34,7 @@ const handleFieldSelect = (field) => {
 }
 
 const handleSuggestionSelect = (sug) => {
+  skipNextSuggestion.value = true
   trackEvent('search_performed', null, { query: sug.display_name })
   fieldsStore.selectSuggestion(sug)
 }
@@ -50,6 +52,10 @@ const handleBookingClick = () => {
 // Watch for address changes to fetch suggestions (debounced)
 watch(() => fieldsStore.searchAddress, (newVal) => {
   if (suggestionTimeout.value) clearTimeout(suggestionTimeout.value)
+  if (skipNextSuggestion.value) {
+    skipNextSuggestion.value = false
+    return
+  }
   if (newVal && newVal.length >= 3) {
     suggestionTimeout.value = setTimeout(() => {
       fieldsStore.fetchAddressSuggestions(newVal)
@@ -81,7 +87,7 @@ const handleBlur = () => {
 
     <!-- DETAILS VIEW -->
     <transition name="slide">
-      <div v-if="fieldsStore.selectedField" class="details-view">
+      <div v-if="fieldsStore.selectedField" key="details" class="details-view">
         <button class="back-btn" @click="fieldsStore.selectField(null)">
           <span class="back-icon-circle">←</span>
           <span class="back-label">Torna alla lista</span>
@@ -179,12 +185,12 @@ const handleBlur = () => {
       </div>
 
       <!-- AI VIEW -->
-      <div v-else-if="activeTab === 'ai'" class="ai-view-container">
+      <div v-else-if="activeTab === 'ai'" key="ai" class="ai-view-container">
         <AIChatAssistant />
       </div>
 
       <!-- LIST VIEW -->
-      <div v-else class="list-view">
+      <div v-else key="list" class="list-view">
         <div class="search-section">
           <div class="search-header">
             <h2>Esplora Campi</h2>
@@ -248,7 +254,7 @@ const handleBlur = () => {
               </div>
               <input
                 type="range"
-                v-model="fieldsStore.radiusKm"
+                v-model.number="fieldsStore.radiusKm"
                 min="1" max="100" step="1"
                 @change="applyFilters"
                 class="modern-slider"
@@ -575,7 +581,7 @@ h3 {
 /* ─── Search section ─── */
 .search-section {
   padding: 2rem;
-  background: linear-gradient(to bottom, rgba(30, 41, 59, 0.4), transparent);
+  background: linear-gradient(to bottom, var(--glass-bg), transparent);
 }
 
 .search-header {

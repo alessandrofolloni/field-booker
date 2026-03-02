@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { useToast } from '@/composables/useToast'
 
-const { toast } = useToast()
+const toast = useToast()
 
 const submissions = ref([])
 const isLoading = ref(true)

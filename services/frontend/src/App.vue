@@ -312,4 +312,42 @@ const userInitial = () => authStore.user?.name?.[0]?.toUpperCase() || '?'
   opacity: 0;
   transform: translateY(8px);
 }
+
+/* ─── Responsive navbar ─── */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .logo-text { display: none; }
+
+  .nav-links { gap: 0.4rem; }
+
+  .user-profile { gap: 0.4rem; }
+
+  .admin-nav { gap: 0.25rem; }
+
+  .nav-pill {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+
+  .btn-primary {
+    padding: 7px 12px;
+    font-size: 0.75rem;
+  }
+
+  .btn-primary span { display: none; }
+  .btn-primary::after { content: '+'; font-size: 1.1rem; font-weight: 800; }
+
+  .admin-badge { display: none; }
+
+  .btn-google span { display: none; }
+
+  .btn-theme {
+    padding: 5px 6px;
+    font-size: 0.95rem;
+  }
+}
 </style>

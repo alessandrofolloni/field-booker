@@ -3,9 +3,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { jwtDecode } from 'jwt-decode'
 import axios from 'axios'
+import { useToast } from '@/composables/useToast'
 
 export const useAuthStore = defineStore('auth', () => {
     const router = useRouter()
+    const toast = useToast()
 
     const token = ref(localStorage.getItem('token') || null)
     const user = ref(null)
@@ -55,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
 
         } catch (error) {
             console.error('Google login failed:', error)
-            alert("Login failed. Please try again.")
+            toast.error('Accesso fallito. Riprova più tardi.')
         } finally {
             isLoading.value = false
         }

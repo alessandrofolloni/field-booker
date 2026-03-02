@@ -297,7 +297,7 @@ const userIcon = L.divIcon({
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
 }
 
 .popup-address {

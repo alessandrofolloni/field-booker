@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFieldsStore } from '@/stores/fields'
 import { useToast } from '@/composables/useToast'
@@ -161,6 +161,13 @@ onMounted(async () => {
     form.value.latitude = fieldsStore.userLocation.lat
     form.value.longitude = fieldsStore.userLocation.lng
     await initMap(form.value.latitude, form.value.longitude)
+  }
+})
+
+onUnmounted(() => {
+  if (mapInstance) {
+    mapInstance.remove()
+    mapInstance = null
   }
 })
 
@@ -395,7 +402,7 @@ const submitField = async () => {
 h1 {
   margin-bottom: 0.5rem;
   font-size: 2rem;
-  background: linear-gradient(to right, #fff, var(--text-secondary));
+  background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
